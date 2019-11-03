@@ -78,6 +78,7 @@ Main:
 	
 	;LOADI  90
 	;STORE  DTheta      ; use API to get robot to face 90 degrees
+	JUMP    Circle
 	LOAD   FFast
 	STORE  DVel        ; use API to move forward
 	JUMP InfLoop
@@ -111,7 +112,64 @@ InfLoop:
 	; robot will continue to attempt to match DTheta and DVel
 	
 	
+Circle:
+   
+	LOAD 	 Dist
+	STORE 	 AtanX
+	LOAD  	 Rad
+	STORE 	 AtanY
+	CALL  	 Atan2
+	STORE    Angle
+	IN       Theta
+	ADD      Angle
+	STORE    DTHETA
 
+;
+	
+	LOAD     Dist
+	STORE    L2X
+	LOAD     Rad
+	STORE    L2Y
+	CALL     L2Estimate
+	STORE    Hyp
+	STORE    d16sN
+	LOAD     FMid
+	STORE    d16sD
+	CALL     Div16s
+	LOAD     dres16sQ
+	STORE    TravTime
+	STORE    m16sA
+    LOAD     Ten
+	STORE    m16sB
+	CALL     Mult16s
+	LOAD     mres16sL
+	STORE    TravTime
+
+
+	LOAD     FMid
+	STORE    DVel 
+	OUT 	 TIMER
+	JUMP     Time  
+	
+StartCircle:
+	IN Theta
+	ADDI -40
+	STORE DTHETA
+	JUMP  StartCircle
+
+Stop:
+	Load 	Zero
+	STORE	DVel
+	JUMP 	InfLoop 		
+	
+Time:
+	
+	IN     TIMER
+	SUB    TravTime
+	JNEG   Time ;StartCircle
+	JUMP   StartCircle
+	
+		
 Die:
 ; Sometimes it's useful to permanently stop execution.
 ; This will also catch the execution if it accidentally
@@ -697,6 +755,12 @@ Seven:    DW 7
 Eight:    DW 8
 Nine:     DW 9
 Ten:      DW 10
+; circle constants
+Dist:	  DW 914
+Rad:	  DW 512
+Angle:    DW 0
+Hyp:      DW 0
+TravTime: DW 0
 ; Some bit masks.
 ; Masks of multiple bits can be constructed by ORing these
 ; 1-bit masks together.
