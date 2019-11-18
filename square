@@ -81,7 +81,12 @@ Main:
 	;LOADI  90
 	;STORE  DTheta      ; use API to get robot to face 90 degrees
 
-	
+	IN Switches
+	STORE Completed
+	OUT LEDs
+	;LOAD Zero
+	;ADDI 2
+	;STORE Completed
 	JUMP Targeting
 
 InfLoop: 
@@ -100,7 +105,7 @@ Targeting:
 	Store BestD
 	
 	LOAD Zero;
-	ADDI 0
+	ADDI 5
 	Store StartTheta
 	LOAD Zero
 	ADDI 180
@@ -182,7 +187,7 @@ EndTargeting:
 	Store Dist
 	JUMP Circle
 	
-Circle:
+Circle:					;find the angle to aproch at
    
 	LOAD 	 Dist
 	STORE 	 AtanX
@@ -197,37 +202,39 @@ Circle:
 	LOAD     FMid
 	STORE    DVel 
 	OUT 	 TIMER
-	JUMP     ForTime  
+	JUMP     ForTime  	;jump to drive forward method
 	
-StartCircle:
-	OUT TIMER
+
 	
-Box:
-	CALL DFandS
-	IN XPOS
-	STORE BigX
-	LOAD Deg90
-	CALL TurnAndStop
-	CALL DFandS
-	IN XPOS
-	SUB BigX
-	JPOS x2bigger
+Box:					;begin making a box around the reflector
+	CALL DFandS2			;call drive forward and stop
+	IN XPOS				;check the x position of first side
+	STORE BigX			; store it
+	IN       Theta		;read in the current angle
+	ADDI     -90		;subtract 90
+	CALL TurnAndStop	;turn and stop
+	CALL DFandS			;go forward and stop
+	IN XPOS				;check the x position of 2nd side
+	SUB BigX			; if new x is bigger then current big x
+	JPOS x2bigger		;call method to update big x
 Box1: 
-	LOAD Deg90
-	CALL TurnAndStop
-	CALL DFandS
-	IN XPOS
-	SUB BigX
-	JPOS x3bigger
+	IN       Theta		;read in the current angle
+	ADDI     -90		;subtract 90
+	CALL TurnAndStop	;turn and stop
+	CALL DFandS			;call drive forward and stop
+	IN XPOS				;check the x position of 3rd side
+	SUB BigX			; if new x is bigger then current big x
+	JPOS x3bigger		;call method to update big x
 Box2:
-	LOAD Deg90
-	CALL TurnAndStop
-	CALL DFandS
-	IN XPOS
-	SUB BigX
-	JPOS x4bigger
+	IN       Theta		;read in the current angle
+	ADDI     -90		;subtract 90
+	CALL TurnAndStop	;turn and stop
+	CALL DFandS			;call drive forward and stop
+	IN XPOS				;check the x position of 4th side
+	SUB BigX			; if new x is bigger then current big x
+	JPOS x4bigger		;call method to update big x
 Box3:
-	LOAD Side
+	LOAD Side			;read in witch side was furthest forward and jump to correct travel method
 	ADDI -4
 	JZERO Travel3
 	LOAD Side
@@ -239,28 +246,34 @@ Box3:
 	JUMP Prepare
 	
 Travel1:
-	LOAD Deg90
+	IN       Theta
+	ADDI     -90
 	CALL TurnAndStop
 	CALL DFandS
 	JUMP Prepare
 	
 Travel2:
-	LOAD Deg90
+	IN       Theta
+	ADDI     -90
 	CALL TurnAndStop
 	CALL DFandS
-	LOAD Deg90
+	IN       Theta
+	ADDI     -90
 	CALL TurnAndStop
 	CALL DFandS
 	JUMP Prepare
 	
 Travel3:
-	LOAD Deg90
+	IN       Theta
+	ADDI     -90
 	CALL TurnAndStop
 	CALL DFandS
-	LOAD Deg90
+	IN       Theta
+	ADDI     -90
 	CALL TurnAndStop
 	CALL DFandS
-	LOAD Deg90
+	IN       Theta
+	ADDI     -90
 	CALL TurnAndStop
 	CALL DFandS
 	JUMP Prepare
@@ -288,43 +301,65 @@ x4bigger:
 	STORE Side
 	JUMP Box3
 	
-GFandS: 
+DFandS: 
 	LOAD FMID
 	STORE DVEl
 	OUT TIMER
 GFandSLoop:
 	IN     Timer
-	ADDI   -15
+	ADDI   -20
 	JNEG   GFandSLoop 
 	LOAD ZERO
 	STORE DVEL
 	RETURN
 	
+DFandS2: 
+	LOAD FMID
+	STORE DVEl
+	OUT TIMER
+GFandSLoop2:
+	IN     Timer
+	ADDI   -11
+	JNEG   GFandSLoop2 
+	LOAD ZERO
+	STORE DVEL
+	RETURN
 	
+DFandS3: 
+	LOAD FMID
+	STORE DVEl
+	OUT TIMER
+GFandSLoop3:
+	IN     Timer
+	ADDI   -4
+	JNEG   GFandSLoop2 
+	LOAD ZERO
+	STORE DVEL
+	RETURN
 	
 	
 Prepare:
 	LOAD ZERO
 	STORE    DVel 
 	CALL TurnAndStop
-	LOAD     FFAST
-	STORE    DVel
-	OUT Timer
-	JUMP Delay
+	CALL DFandS3
+	LOAD Completed
+	ADDI -1
+	STORE Completed
+	JNEG Box
+	JUMP Targeting
 
 Stop:
 	Load 	Zero
 	STORE	DVel
 	JUMP 	InfLoop 		
 	
-ForTime:
+ForTime:				;drive forward till sense reflector within range
 	IN     DIST5
 	ADDI   -400
 	JPOS   ForTime
 	OUT    TIMER
-	IN     DIST5
-	STORE	OrgDist
-	JUMP	Box
+	JUMP	Box       ;go to box
 	
 
 
@@ -982,7 +1017,7 @@ EndTheta:   DW 180;
 
 ; circle constants
 Dist:	  DW 1371
-Rad:	  DW 475
+Rad:	  DW 450
 Angle:    DW 0
 Hyp:      DW 0
 TravTime: DW 0
@@ -990,8 +1025,8 @@ OrgDist:  DW 0
 MaxY:	  DW 1465
 MinY:	  DW -879
 BigX:	  DW 0
-Side:	DW 1;		
-
+Side:	  DW 1;		
+Completed: DW 9999;
 ; some useful movement values
 OneMeter: DW 961       ; ~1m in 1.04mm units
 HalfMeter: DW 481      ; ~0.5m in 1.04mm units
